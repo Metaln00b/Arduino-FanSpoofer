@@ -26,6 +26,21 @@ void setup() {
     Serial.begin(9600);
 
     lastMicrosTachoInput = micros();
+
+    TCCR1A = (1<<COM1A0); // Toggle OC1A on Compare Match; Wave Form Generator: CTC Mode 4, Top = OCR1A
+    TCCR1B = (1<<WGM12) + (1<<CS12) + (1<<CS10); // prescaler = 1024; 
+    OCR1A = 15624; // Top
+    DDRB |= (1<<PB1); // PIN9 as output
+}
+
+float rpmToHz(float rpm) {
+    float hz = (rpm / 60.0f) *4;
+    return hz;
+}
+
+int hzToTop(float hz) {
+    float top = (16000000 / (1024 * hz)) -1; // (system clock / (prescaler * hz))
+    return top;
 }
 
 void loop() {
@@ -41,11 +56,14 @@ void loop() {
         Serial.print(pwm);
         Serial.print(" Input (Tacho): ");
         Serial.println((tachoInputCounter / 2) * 60);
+        OCR1A = hzToTop(rpmToHz((tachoInputCounter / 2) * 60));
 
         // Reset variables
         tachoInputCounter = 0;
         lastMicrosTachoInput = currentMicros;
     }
+
+    
 }
 
 byte getPWM(byte pin)
