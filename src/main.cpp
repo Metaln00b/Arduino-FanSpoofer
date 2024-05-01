@@ -47,7 +47,6 @@ void loop() {
 
     unsigned long currentMicros = micros();
   
-    // Calculate RPM
     if (currentMicros - lastMicrosTachoInput >= 1000000) {
         rpm = (tachoInputCounter / 2) * 60;
         
