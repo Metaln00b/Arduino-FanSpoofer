@@ -6,10 +6,10 @@ const byte pwmInputPin = 3;
 const byte tachoInputPin = 2;
 
 const byte pwmOutputPin = 6;
-const byte tachoOutputPin = 5;
 
 volatile unsigned long tachoInputCounter = 0;
 volatile unsigned long lastMicrosTachoInput;
+unsigned long rpm;
 
 void countPulses() {
   tachoInputCounter ++;
@@ -19,7 +19,6 @@ void setup() {
     pinMode(pwmOutputPin, OUTPUT);
     pinMode(pwmInputPin, INPUT);
 
-    pinMode(tachoOutputPin, OUTPUT);
     pinMode(tachoInputPin, INPUT);
 
     attachInterrupt(digitalPinToInterrupt(tachoInputPin), countPulses, RISING);
@@ -34,7 +33,7 @@ void setup() {
 }
 
 float rpmToHz(float rpm) {
-    float hz = (rpm / 60.0f) *4;
+    float hz = (rpm / 60.0f) * 4;
     return hz;
 }
 
@@ -46,24 +45,32 @@ int hzToTop(float hz) {
 void loop() {
     byte pwm = getPWM(pwmInputPin);
 
-    //analogWrite(pwmOutputPin, pwm);
-
     unsigned long currentMicros = micros();
   
     // Calculate RPM
     if (currentMicros - lastMicrosTachoInput >= 1000000) {
+        rpm = (tachoInputCounter / 2) * 60;
+        
         Serial.print("Input (PWM): ");
         Serial.print(pwm);
         Serial.print(" Input (Tacho): ");
-        Serial.println((tachoInputCounter / 2) * 60);
-        OCR1A = hzToTop(rpmToHz((tachoInputCounter / 2) * 60));
+        Serial.println(rpm);
+
+        if (pwm <= 100)
+        {
+            digitalWrite(pwmOutputPin, LOW);
+            OCR1A = hzToTop(rpmToHz(1720));
+        }
+        else
+        {
+            analogWrite(pwmOutputPin, pwm);
+            OCR1A = hzToTop(rpmToHz(rpm));
+        }
 
         // Reset variables
         tachoInputCounter = 0;
         lastMicrosTachoInput = currentMicros;
     }
-
-    
 }
 
 byte getPWM(byte pin)
